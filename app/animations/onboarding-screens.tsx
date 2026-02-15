@@ -1,10 +1,13 @@
+import AlbumCard from "@/components/AlbumCard";
+import OnboardingCard, {
+  CARD_HEIGHT,
+  CARD_WIDTH,
+} from "@/components/OnboardingCard";
 import { ALBUMS_DATA } from "@/lib/constants";
 import { Feather } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { useState } from "react";
 import {
   Dimensions,
-  ImageSourcePropType,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,17 +15,11 @@ import {
   View,
 } from "react-native";
 import Animated, {
-  Extrapolation,
-  interpolate,
-  SharedValue,
   useAnimatedScrollHandler,
-  useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
 
 const width = Dimensions.get("window").width;
-const CARD_HEIGHT = width - 150;
-const CARD_WIDTH = width - 150;
 
 const OnboardingScreens = () => {
   const scrollX = useSharedValue(0);
@@ -35,7 +32,7 @@ const OnboardingScreens = () => {
   });
 
   return (
-    <View style={{ flex: 1, backgroundColor: "white" }}>
+    <ScrollView style={{ flex: 1, backgroundColor: "white" }}>
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
           <Feather
@@ -56,7 +53,7 @@ const OnboardingScreens = () => {
       <Animated.ScrollView
         horizontal
         style={{
-          height: 0,
+          height: CARD_HEIGHT + 60,
         }}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{
@@ -79,91 +76,23 @@ const OnboardingScreens = () => {
           />
         ))}
       </Animated.ScrollView>
-      <ScrollView contentContainerStyle={{ flex: 1, backgroundColor: "blue" }}>
-        <Text>Hello</Text>
-      </ScrollView>
-    </View>
+      <View style={styles.albumSection}>
+        <Text style={styles.albumSectionTitle}>Popular Albums</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.albumListContent}
+        >
+          {[...ALBUMS_DATA].reverse().map((album) => (
+            <AlbumCard key={album.id} album={album} />
+          ))}
+        </ScrollView>
+      </View>
+    </ScrollView>
   );
 };
 
 export default OnboardingScreens;
-
-const OnboardingCard = ({
-  image,
-  title,
-  scrollX,
-  index,
-}: {
-  index: number;
-  image: ImageSourcePropType;
-  title: string;
-  scrollX: SharedValue<number>;
-}) => {
-  const cardStyle = useAnimatedStyle(() => {
-    const inputRange = [
-      (index - 1) * CARD_WIDTH,
-      index * CARD_WIDTH,
-      (index + 1) * CARD_WIDTH,
-    ];
-
-    // Create subtle arc motion
-    const translateY = interpolate(
-      scrollX.value,
-      inputRange,
-      [50, 0, 50], // Arc upward when centered
-      Extrapolation.CLAMP,
-    );
-
-    const scale = interpolate(
-      scrollX.value,
-      inputRange,
-      [0.6, 1, 0.6],
-      Extrapolation.CLAMP,
-    );
-
-    const rotateZ = interpolate(
-      scrollX.value,
-      inputRange,
-      [15, 0, -15],
-      Extrapolation.CLAMP,
-    );
-
-    return {
-      transform: [{ translateY }, { scale }, { rotateZ: `${rotateZ}deg` }],
-    };
-  });
-
-  return (
-    <Animated.View
-      style={[
-        {
-          width: CARD_WIDTH,
-          height: CARD_HEIGHT,
-          alignSelf: "center",
-        },
-        cardStyle,
-      ]}
-    >
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Image
-          source={image}
-          style={{ width: "100%", height: "100%" }}
-          contentFit="cover"
-        />
-      </View>
-    </Animated.View>
-  );
-};
-
-// OnboardingCard.displayName = "OnboardingCard";
-
-// const AnimatedOnboardingCard = Animated.createAnimatedComponent(OnboardingCard);
 
 const styles = StyleSheet.create({
   searchContainer: {
@@ -185,5 +114,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: "#333",
+  },
+  albumSection: {
+    paddingTop: 10,
+  },
+  albumSectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1a1a1a",
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  albumListContent: {
+    paddingHorizontal: 16,
+    gap: 14,
   },
 });
