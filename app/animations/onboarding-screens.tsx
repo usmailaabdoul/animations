@@ -1,7 +1,18 @@
-import { CARD_DATA } from "@/lib/constants";
+import { ALBUMS_DATA } from "@/lib/constants";
+import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { Dimensions, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  Dimensions,
+  ImageSourcePropType,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import Animated, {
+  Extrapolation,
   interpolate,
   SharedValue,
   useAnimatedScrollHandler,
@@ -10,15 +21,12 @@ import Animated, {
 } from "react-native-reanimated";
 
 const width = Dimensions.get("window").width;
-const CARD_HEIGHT = (width * 1564) / 1274;
-const CARD_WIDTH = width - 100;
+const CARD_HEIGHT = width - 150;
+const CARD_WIDTH = width - 150;
 
 const OnboardingScreens = () => {
   const scrollX = useSharedValue(0);
-
-  // const handleScroll = useAnimatedScrollHandler((event: ScrollEvent) => {
-  //   scrollX.value = event.contentOffset.x / CARD_WIDTH;
-  // });
+  const [searchQuery, setSearchQuery] = useState("");
 
   const onScroll = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -27,34 +35,53 @@ const OnboardingScreens = () => {
   });
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: "white" }}>
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputWrapper}>
+          <Feather
+            name="search"
+            size={18}
+            color="#999"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search..."
+            placeholderTextColor="#999"
+            style={styles.searchInput}
+          />
+        </View>
+      </View>
       <Animated.ScrollView
         horizontal
+        style={{
+          height: 0,
+        }}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: (width - CARD_WIDTH) / 2,
-          // flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          // gap: 10,
         }}
-        // style={{ flex: 1, backgroundColor: "red" }}
         snapToInterval={CARD_WIDTH}
         decelerationRate="fast"
-        // snapToAlignment="start"
-        // pagingEnabled
         scrollEventThrottle={16}
         onScroll={onScroll}
       >
-        {CARD_DATA.map((card, index) => (
+        {ALBUMS_DATA.map((card, index) => (
           <OnboardingCard
             key={card.id}
             index={index}
-            {...card}
+            image={card.image}
+            title={card.title}
             scrollX={scrollX}
           />
         ))}
       </Animated.ScrollView>
+      <ScrollView contentContainerStyle={{ flex: 1, backgroundColor: "blue" }}>
+        <Text>Hello</Text>
+      </ScrollView>
     </View>
   );
 };
@@ -68,31 +95,41 @@ const OnboardingCard = ({
   index,
 }: {
   index: number;
-  image: string;
+  image: ImageSourcePropType;
   title: string;
   scrollX: SharedValue<number>;
 }) => {
   const cardStyle = useAnimatedStyle(() => {
-    const translateX = interpolate(
+    const inputRange = [
+      (index - 1) * CARD_WIDTH,
+      index * CARD_WIDTH,
+      (index + 1) * CARD_WIDTH,
+    ];
+
+    // Create subtle arc motion
+    const translateY = interpolate(
       scrollX.value,
-      [(index - 1) * width, index * width, (index + 1) * width],
-      [width / 2, 0, -width / 2],
+      inputRange,
+      [50, 0, 50], // Arc upward when centered
+      Extrapolation.CLAMP,
     );
 
     const scale = interpolate(
       scrollX.value,
-      [(index - 1) * CARD_WIDTH, index * CARD_WIDTH, (index + 1) * CARD_WIDTH],
-      [0.8, 1, 0.8],
+      inputRange,
+      [0.6, 1, 0.6],
+      Extrapolation.CLAMP,
     );
-    const height = interpolate(
+
+    const rotateZ = interpolate(
       scrollX.value,
-      [(index - 1) * CARD_WIDTH, index * CARD_WIDTH, (index + 1) * CARD_WIDTH],
-      [CARD_HEIGHT * 0.7, CARD_HEIGHT, CARD_HEIGHT * 0.7],
+      inputRange,
+      [15, 0, -15],
+      Extrapolation.CLAMP,
     );
 
     return {
-      transform: [{ scale }],
-      height,
+      transform: [{ translateY }, { scale }, { rotateZ: `${rotateZ}deg` }],
     };
   });
 
@@ -101,7 +138,7 @@ const OnboardingCard = ({
       style={[
         {
           width: CARD_WIDTH,
-          // height: CARD_HEIGHT,
+          height: CARD_HEIGHT,
           alignSelf: "center",
         },
         cardStyle,
@@ -109,18 +146,16 @@ const OnboardingCard = ({
     >
       <View
         style={{
-          // padding: 20,
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
         }}
       >
         <Image
-          source={{ uri: image }}
-          style={{ borderRadius: 20, width: "100%", height: "100%" }}
+          source={image}
+          style={{ width: "100%", height: "100%" }}
           contentFit="cover"
         />
-        <Text>{title}</Text>
       </View>
     </Animated.View>
   );
@@ -129,3 +164,26 @@ const OnboardingCard = ({
 // OnboardingCard.displayName = "OnboardingCard";
 
 // const AnimatedOnboardingCard = Animated.createAnimatedComponent(OnboardingCard);
+
+const styles = StyleSheet.create({
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  searchInputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    borderRadius: 9999,
+    paddingHorizontal: 16,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: "#333",
+  },
+});
